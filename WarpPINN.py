@@ -8,8 +8,11 @@ import numpy as np
 import time
 from pyDOE import lhs
 
-class WarpPINN(tf.Module):
-    
+# Set up tensorflow in graph mode
+tf.compat.v1.disable_eager_execution()
+
+#class WarpPINN(tf.Module):
+class WarpPINN:    
     def __init__(self, imr, imt, layers_u, bool_mask, im_mesh, segm_mesh, bg_mesh, lmbmu, pix_crop, reg_mask=1, sigma=None):
 
         """ 
@@ -135,7 +138,7 @@ class WarpPINN(tf.Module):
 
         ### Neural Network ###
         
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
         
         # tf placeholders and graph
         self.sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(allow_soft_placement=True,
@@ -143,12 +146,14 @@ class WarpPINN(tf.Module):
 
         self.weights_u, self.biases_u = self.initialize_NN(layers_u, 'u')
 
+        #tf.compat.v1.disable_eager_execution()
+
         # Placeholders for image registration
-        self.x_tf = tf.placeholder(tf.float32, shape=[None, 1])
-        self.y_tf = tf.placeholder(tf.float32, shape=[None, 1])
-        self.z_tf = tf.placeholder(tf.float32, shape=[None, 1])
+        self.x_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, 1])
+        self.y_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, 1])
+        self.z_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, 1])
         
-        self.t_tf = tf.placeholder(tf.float32, shape=[None, 1])
+        self.t_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, 1])
 
         # Placeholders for Neo Hookean
         self.x_e_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, 1])
@@ -208,11 +213,11 @@ class WarpPINN(tf.Module):
         # self.imr_pred_not_LV = tf.boolean_mask(self.imr_pred, ~bool_mask)
         # self.imr_tf_not_LV = tf.boolean_mask(self.imr_tf, ~bool_mask)
 
-        self.loss_MSE = tf.reduce_mean( self.mask * tf.square( (self.imr_pred - self.imr_tf) ) )
-        self.loss_L1 = tf.reduce_mean( self.mask * tf.abs( (self.imr_pred - self.imr_tf) ) )
+        self.loss_MSE = tf.compat.v1.reduce_mean( self.mask * tf.square( (self.imr_pred - self.imr_tf) ) )
+        self.loss_L1 = tf.compat.v1.reduce_mean( self.mask * tf.abs( (self.imr_pred - self.imr_tf) ) )
 
-        self.loss_MSE_crop = tf.reduce_mean( self.mask[:, 0:-1:2, 0:-1:2] * tf.square(self.imr_crop_pred - self.imr_crop_tf))
-        self.loss_L1_crop = tf.reduce_mean( self.mask[:, 0:-1:2, 0:-1:2] * tf.abs(self.imr_crop_pred - self.imr_crop_tf))
+        self.loss_MSE_crop = tf.compat.v1.reduce_mean( self.mask[:, 0:-1:2, 0:-1:2] * tf.square(self.imr_crop_pred - self.imr_crop_tf))
+        self.loss_L1_crop = tf.compat.v1.reduce_mean( self.mask[:, 0:-1:2, 0:-1:2] * tf.abs(self.imr_crop_pred - self.imr_crop_tf))
 
         self.train_op_Adam_MSE = self.optimizer_Adam.minimize(self.loss_MSE)
 
@@ -221,8 +226,8 @@ class WarpPINN(tf.Module):
         self.lossit_MSE = []
         self.lossit_NeoHook = []
 
-        self.saver = tf.train.Saver()
-
+        # self.saver = tf.train.Saver()
+        self.saver = tf.train.Checkpoint()
         # Initialize Tensorflow variables
         init = tf.compat.v1.global_variables_initializer()
         self.sess.run(init)
