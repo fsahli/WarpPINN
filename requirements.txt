@@ -1,0 +1,8 @@
+pyDOE
+numpy==1.20.1
+meshio==4.4.6
+nilearn==0.8.1
+nibabel==3.2.1
+vtk==9.0.3
+pyvista==0.32.1
+pydicom==2.1.2

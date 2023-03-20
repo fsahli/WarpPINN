@@ -227,7 +227,8 @@ class WarpPINN:
         self.lossit_NeoHook = []
 
         # self.saver = tf.train.Saver()
-        self.saver = tf.train.Checkpoint()
+        self.saver = tf.compat.v1.train.Saver()
+        # self.saver = tf.train.Checkpoint()
         # Initialize Tensorflow variables
         init = tf.compat.v1.global_variables_initializer()
         self.sess.run(init)
