@@ -1,0 +1,51 @@
+name: Bidirectional Mirror with fsahli
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 */6 * * *'  # Check for changes every 6 hours
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.MIRROR_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "Mirror Bot"
+          git config user.email "actions@github.com"
+
+      - name: Add mirror remote
+        run: git remote add mirror https://x-access-token:${{ secrets.MIRROR_TOKEN }}@github.com/fsahli/WarpPINN.git
+
+      - name: Fetch from mirror
+        run: git fetch mirror main
+
+      - name: Check for changes in mirror
+        id: check_changes
+        run: |
+          if [ "$(git rev-parse main)" != "$(git rev-parse mirror/main)" ]; then
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Merge changes from mirror (if any)
+        if: steps.check_changes.outputs.changes_detected == 'true'
+        run: |
+          git merge mirror/main --no-edit || {
+            echo "Merge conflict detected. Manual intervention required."
+            exit 1
+          }
+
+      - name: Push to mirror
+        run: git push mirror main
+
+      - name: Push back to source (if changes were merged)
+        if: steps.check_changes.outputs.changes_detected == 'true'
+        run: git push origin main
